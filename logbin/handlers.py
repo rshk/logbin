@@ -1,5 +1,7 @@
 import logging
+import os
 import sys
+import time
 
 
 class PackStreamHandler(logging.Handler):
@@ -82,3 +84,17 @@ class PackStreamHandler(logging.Handler):
             self.handleError(record)
         finally:
             self.release()
+
+
+class GridFSHandler(PackStreamHandler):
+    """Logging handler writing to MongoDB/GridFS in binary format"""
+
+    def __init__(self, db, collection='logs', filename=None):
+        super(GridFSHandler, self).__init__()
+        import gridfs
+        self._gridfs = gridfs.GridFS(db=db, collection=collection)
+        if filename is None:
+            filename = "{0:x}-{1}.log".format(int(time.time()), os.getpid())
+        self.filename = filename
+        self.stream = self._gridfs.new_file(_id=filename)
+        self.setLevel(logging.DEBUG)  # Log everything by default
